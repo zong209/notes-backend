@@ -15,7 +15,8 @@ var lastID = 0;
 var schema = new Schema({
     //NOTES参数
     ID: { type: Number, require: true },
-    TITLE: { type: String, require: true }
+    title: { type: String, require: true },
+    body:{type:String}
 }, { collection: "NOTES" });
 
 schema.static('getNextID', function (callback) {

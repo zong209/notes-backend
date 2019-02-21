@@ -56,7 +56,8 @@ exports.route('/').get(function(req, res) {
 
         var data = {
             ID: ID,
-            TITLE: req.body.title
+            title: req.body.title,
+            body:req.body.body
         };
 
         (new NOTES(data)).save(function(err, data) {
