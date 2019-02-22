@@ -22,12 +22,13 @@ module.exports = exports = express.Router();
 
 // NOTES management 
 exports.route('/').get(function(req, res) {
-    // var limit = Number(req.query.limit) || config.page.limit;
-    // var skip = Number(req.query.skip) || 0;
+    var limit = Number(req.query.limit) || config.page.limit;
+    var skip = Number(req.query.skip) || 1;
 
     var condition = {};
 
-    NOTES.find(condition).select('-_id')
+    NOTES.find().count().then(function(total){
+        NOTES.find(condition).select('-_id').limit(limit).skip((skip-1)*limit)
         .exec(function(err, docs) {
             if (err) {
                 res.send({
@@ -35,9 +36,19 @@ exports.route('/').get(function(req, res) {
                 });
                 return;
             }
-
-            res.send(docs);
+            res.send({"total":total,'docs':docs});
         });
+    })
+    // NOTES.find(condition).select('-_id').limit(limit).skip((skip-1)*limit)
+    //     .exec(function(err, docs) {
+    //         if (err) {
+    //             res.send({
+    //                 error: 'Get docs list failed!'
+    //             });
+    //             return;
+    //         }
+    //         res.send(docs);
+    //     });
 }).post(function(req, res) {
     if (!req.body.title) {
         res.send({
