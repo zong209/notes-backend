@@ -71,11 +71,12 @@ exports.route('/').get(function(req, res) {
         })
     }else{
         jianshuCrawler(url).then(function(resp){
-            res.send({'status':200,'resp':resp})
-        }).catch{
-            res.send
-        }
+            res.send({'status':true,'resp':resp})
+        }).catch(function(resp){
+            res.send({'status':false,'resp':resp})
+        })
     }
+})
     
     // CRAWLER.find(condition).select('-_id').limit(limit).skip((skip-1)*limit)
     //     .exec(function(err, docs) {
@@ -87,37 +88,37 @@ exports.route('/').get(function(req, res) {
     //         }
     //         res.send(docs);
     //     });
-}).post(function(req, res) {
-    if (!req.body.title) {
-        res.send({
-            error: 'title must be specified!'
-        });
-        return;
-    }
+// }).post(function(req, res) {
+//     if (!req.body.title) {
+//         res.send({
+//             error: 'title must be specified!'
+//         });
+//         return;
+//     }
 
-    CRAWLER.getNextID(function(err, ID) {
-        if (err) {
-            res.send({
-                error: err
-            });
-            return;
-        }
+//     CRAWLER.getNextID(function(err, ID) {
+//         if (err) {
+//             res.send({
+//                 error: err
+//             });
+//             return;
+//         }
 
-        var data = {
-            ID: ID,
-            title: req.body.title,
-            body:req.body.body
-        };
+//         var data = {
+//             ID: ID,
+//             title: req.body.title,
+//             body:req.body.body
+//         };
 
-        (new CRAWLER(data)).save(function(err, data) {
-            if (err) {
-                res.send({
-                    error: 'Create CRAWLER failed!'
-                });
-                return;
-            }
+//         (new CRAWLER(data)).save(function(err, data) {
+//             if (err) {
+//                 res.send({
+//                     error: 'Create CRAWLER failed!'
+//                 });
+//                 return;
+//             }
 
-            res.send(data);
-        });
-    });
-});
+//             res.send(data);
+//         });
+//     });
+// });
