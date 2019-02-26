@@ -2,7 +2,7 @@
  * Dependencies
  */
 var express = require('express');
-// var mixin = require('utils-merge');
+var mixin = require('utils-merge');
 var config = require('../config');
 
 var db = require('../db/index');
@@ -28,7 +28,7 @@ exports.route('/').get(function(req, res) {
     var condition = {};
 
     NOTES.find().count().then(function(total){
-        NOTES.find(condition).select('-_id').limit(limit).skip((skip-1)*limit)
+        NOTES.find(condition).select('-_id').sort({'submittime':-1}).limit(limit).skip((skip-1)*limit)
         .exec(function(err, docs) {
             if (err) {
                 res.send({
@@ -78,68 +78,75 @@ exports.route('/').get(function(req, res) {
                 });
                 return;
             }
-
             res.send(data);
         });
     });
 });
 
-// exports.route('/:ID').get(function(req, res) {
-//     NOTES.findOne({ 'ID': req.params.ID }).exec(function(err, data) {
-//         if (err || !data) {
-//             res.send({
-//                 error: 'Data does not exist!'
-//             });
-//             return;
-//         }
+exports.route('/:id').get(function(req, res) {
+    if(!req.params.id){
+        res.send({
+            error:'params error!'
+        })
+    }
+    var ID=req.params.id
+    var condition = {'ID':ID};
 
-//         res.send(data);
-//     });
-// }).post(function(req, res) {
-//     if (!req.body.MNTNAME || !req.body.SVRNAME ||
-//         !req.body.SVRIP || !req.body.SVRPORT) {
-//         res.send({
-//             error: 'MNTNAME、SVRNAME、SVRIP and SVRPORT must be specified!'
-//         });
-//         return;
-//     }
+    NOTES.findOne(condition).select('-_id').exec(function(err, data) {
+        if (err || !data) {
+            res.send({
+                error: 'Data does not exist!'
+            });
+            return;
+        }
+        res.send(data);
+    })
+}).post(function(req,res){
+    if(!req.params.id){
+        res.send({
+            error:'params error!'
+        })
+    }
+    NOTES.findOne({ 'ID': req.params.id }).exec(function(err, data) {
+        if (err || ! data) {
+            res.send({
+              error: 'Data does not exist!'
+            });
+            return;
+        }
+        mixin(data,req.body)
+        data.save(function (err, data) {
+            if (err) {
+                res.send({
+                error: 'Save data failed!'
+                });
+                return;
+            }
+            res.send(data);
+        });
+    })
+})
 
-//     NOTES.findOne({ 'ID': req.params.ID }).exec(function(err, data) {
-//         if (err || !data) {
-//             res.send({
-//                 error: 'Data does not exist!'
-//             });
-//             return;
-//         }
-
-//         mixin(data, req.body);
-//         data.save(function(err, data) {
-//             if (err) {
-//                 res.send({
-//                     error: 'Save datafailed!'
-//                 });
-//                 return;
-//             }
-
-//             res.send(data);
-//         });
-//     });
-// }).delete(function(req, res) {
-//     NOTES.findOne({ 'ID': req.params.ID }).exec(function(err, data) {
-//         if (err || !data) {
-//             res.send({
-//                 error: 'Data does not exist!'
-//             });
-//             return;
-//         }
-
-//         data.remove(function(err, data) {
-//             if (err) {
-//                 res.send({
-//                     error: 'Delete data failed!'
-//                 });
-//             }
-//             res.send(data);
-//         });
-//     });
-// });
+exports.route('/delete/:id').get(function(req, res) {
+    if(!req.params.id){
+        res.send({
+            error:'params error!'
+        })
+    }
+    NOTES.findOne({ 'ID': req.params.id }).exec(function(err, data) {
+        if (err || ! data) {
+            res.send({
+              error: 'Data does not exist!'
+            });
+            return;
+        }
+        data.remove(function (err, data) {
+            if (err) {
+              res.send({
+                error: 'Delete data failed!'
+              });
+            }
+            res.send(data);
+        });
+    })
+})

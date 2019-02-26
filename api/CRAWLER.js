@@ -7,14 +7,19 @@ var config = require('../config');
 var Crawler = require("crawler");
 var cheerio = require('cheerio')
 // const fs = require('fs');
+var Entities = require('html-entities').XmlEntities;
 
+const entities = new Entities();
 function getPageHtml(str){
-    var REG_BODY = /<hr[^>]*>([\s\S]*)<\hr>/;
-    var body = new String(REG_BODY.exec(str));
+    // var REG_BODY = /<hr[^>]*>([\s\S]*)<\hr>/;
+    // var body = new String(REG_BODY.exec(str));
+    var body=str
+    // var reg=/(<code>[\s\S]+?)(\n)+(\#\#[\s\S]+?<\/code>)/g
     var reg=/(<code>[\s\S]+?)(\n)+(\#\#[\s\S]+?<\/code>)/g
     while(body.match(reg)){
-        body=body.replace(reg,'$1'+''+"$3")
+        body=body.replace(reg,'$1'+"$3")
     }
+    body=entities.decode(body)
     return body
 }
 

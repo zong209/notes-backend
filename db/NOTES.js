@@ -16,7 +16,8 @@ var schema = new Schema({
     //NOTES参数
     ID: { type: Number, require: true },
     title: { type: String, require: true },
-    body:{type:String}
+    body:{type:String},
+    submittime:{type:Date,required:true,default:new Date()}
 }, { collection: "NOTES" });
 
 schema.static('getNextID', function (callback) {
