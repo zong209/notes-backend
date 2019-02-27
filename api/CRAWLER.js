@@ -10,19 +10,26 @@ var cheerio = require('cheerio')
 var Entities = require('html-entities').XmlEntities;
 
 const entities = new Entities();
+
 function getPageHtml(str){
     // var REG_BODY = /<hr[^>]*>([\s\S]*)<\hr>/;
     // var body = new String(REG_BODY.exec(str));
-    var body=str
+    var body=str.replace(/(^\s*)|(\s*$)/g, "");
+    var reg=/(<code>[\s\S]+?)([\n]{2,})+([\#\/]{2,}[\s\S]+?<\/code>)/g
     // var reg=/(<code>[\s\S]+?)(\n)+(\#\#[\s\S]+?<\/code>)/g
-    var reg=/(<code>[\s\S]+?)(\n)+(\#\#[\s\S]+?<\/code>)/g
-    while(body.match(reg)){
-        body=body.replace(reg,'$1'+"$3")
-    }
+    body=body.replace(reg,'$1\n'+"$3")
+    body=imgBlockProcess(body)
     body=entities.decode(body)
     return body
 }
 
+//图片块处理
+function imgBlockProcess(str){
+    var reg=/\<div class=\"image-package\">[\s\S\n]*?<img data-original-src=\"\/\/([\S]*)\"[\s\S\n]*?data-original-filesize=\"[\s\S\n]*?<\/div>\n<\/div>/g
+    var temp=str.match(reg)
+    str=str.replace(reg,'<div><img src="http://'+'$1'+'"></div>')
+    return str 
+} 
 var c = new Crawler({
     maxConnections : 10,
     // This will be called for each crawled page
