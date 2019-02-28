@@ -7,6 +7,7 @@ var db = require('../db/index');
  */
 var NOTES=require('./NOTES');
 var CRAWLER=require('./CRAWLER');
+var SEARCH=require('./SEARCH');
 
 /**
  * api
@@ -15,5 +16,6 @@ var api = express.Router();
 
 api.use('/NOTES',NOTES);
 api.use('/CRAWLER',CRAWLER);
+api.use('/SEARCH',SEARCH);
 
 module.exports=api;

@@ -23,12 +23,10 @@ module.exports = exports = express.Router();
 // NOTES management 
 exports.route('/').get(function(req, res) {
     var limit = Number(req.query.limit) || config.page.limit;
-    var skip = Number(req.query.skip) || 1;
-
-    var condition = {};
+    var skip = Number(req.query.skip) || config.page.skip;
 
     NOTES.find().count().then(function(total){
-        NOTES.find(condition).select('-_id').sort({'submittime':-1}).limit(limit).skip((skip-1)*limit)
+        NOTES.find().select('-_id').sort('-ID').limit(limit).skip((skip-1)*limit)
         .exec(function(err, docs) {
             if (err) {
                 res.send({
@@ -39,16 +37,6 @@ exports.route('/').get(function(req, res) {
             res.send({"total":total,'docs':docs});
         });
     })
-    // NOTES.find(condition).select('-_id').limit(limit).skip((skip-1)*limit)
-    //     .exec(function(err, docs) {
-    //         if (err) {
-    //             res.send({
-    //                 error: 'Get docs list failed!'
-    //             });
-    //             return;
-    //         }
-    //         res.send(docs);
-    //     });
 }).post(function(req, res) {
     if (!req.body.title) {
         res.send({
@@ -83,7 +71,8 @@ exports.route('/').get(function(req, res) {
     });
 });
 
-exports.route('/:id').get(function(req, res) {
+//查询＆修改
+exports.route('/modify/:id').get(function(req, res) {
     if(!req.params.id){
         res.send({
             error:'params error!'
@@ -127,6 +116,7 @@ exports.route('/:id').get(function(req, res) {
     })
 })
 
+//删除数据
 exports.route('/delete/:id').get(function(req, res) {
     if(!req.params.id){
         res.send({
@@ -149,4 +139,23 @@ exports.route('/delete/:id').get(function(req, res) {
             res.send(data);
         });
     })
+})
+
+// 批量ID查询
+exports.route('/batch').post(function(req, res) {
+    var limit = Number(req.query.limit) || config.page.limit;
+    var skip = Number(req.query.skip) || config.page.skip;
+
+    var IDs=req.body.ids
+    var condition={'ID':{$in:IDs}}
+    NOTES.find(condition).select('-_id').sort({'ID':-1}).limit(limit).skip((skip-1)*limit)
+    .exec(function(err, docs) {
+        if (err) {
+            res.send({
+                error: 'Get docs list failed!'
+            });
+            return;
+        }
+        res.send({"total":IDs.length,'docs':docs});
+    });
 })
