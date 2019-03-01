@@ -5,28 +5,43 @@ var express = require('express');
 // var mixin = require('utils-merge');
 var config = require('../config');
 var https=require('https')
+var http=require('http')
 var Crawler = require("crawler");
 var cheerio = require('cheerio')
 // const fs = require('fs');
 var Entities = require('html-entities').XmlEntities;
 
+// 图片接口
+var uuid = require('uuid')
+var db = require('../db/index');
+
+var IMAGES = db.IMAGES;
+
+
 const entities = new Entities();
 
-function getPageHtml(str,imgProcess){
+// 去空行处理图片
+function getPageHtml(str,name){
     // var REG_BODY = /<hr[^>]*>([\s\S]*)<\hr>/;
     // var body = new String(REG_BODY.exec(str));
     var body=str.replace(/(^\s*)|(\s*$)/g, "");
     var reg=/(<code>[\s\S]+?)([\n]{2,})+([\s\S]+?<\/code>)/g
     // var reg=/(<code>[\s\S]+?)(\n)+(\#\#[\s\S]+?<\/code>)/g
     body=body.replace(reg,'$1\n'+"$3")
-    if (imgProcess){
-        body=imgBlockProcess(body)
-    }
-    body=entities.decode(body)
-    return body
+    return new Promise(function(resolve,reject){
+        if(name){
+            csdnImg(body,name).then(function(resp){
+                body=entities.decode(resp.body)
+                resolve({'uuids':resp.uuids,'body':body})
+            })
+        }
+        else{
+            resolve({'uuids':[],'body':body})
+        }
+    })
 }
 
-//图片块处理
+//简书图片块处理
 function imgBlockProcess(str){
     var reg=/\<div class=\"image-package\">[\s\S\n]*?<img data-original-src=\"\/\/([\S]*)\"[\s\S\n]*?data-original-filesize=\"[\s\S\n]*?<\/div>\n<\/div>/g
     // var temp=str.match(reg)
@@ -34,14 +49,65 @@ function imgBlockProcess(str){
     return str 
 }
 
+// 上传图片至数据库
+function　postImage(data){
+    return new Promise(function(resolve,reject){
+        (new IMAGES(data)).save(function(err,data){
+            if (err) {
+                reject({'success':false,'msg':"save image failed"})
+            }
+            else{
+                resolve({'success':true,'data':data})
+            }
+        })
+    })
+}
+
 //csdn图片处理
-function csdnImg(str){
-    var reg=/\<img[\s\S]*?src=\"([\S]*?)\"[\s\S]*?>/g
-    var urls=reg.exec(str)
-    urls.forEach(url => {
-        picCrawler(url)
-    });
-    return(str)
+function csdnImg(str,name){
+    var resps=[]
+    if(name=='csdn'){
+        var reg=/\<img[\s\S]*?src=\"([\S]*?)\"[\s\S]*?>/g
+    }
+    if(name=='jianshu'){
+        var reg=/\<div class=\"image-package\">[\s\S\n]*?<img data-original-src=\"\/\/([\S]*)\"[\s\S\n]*?data-original-filesize=\"[\s\S\n]*?<\/div>\n<\/div>/g
+    }
+    var images=str.match(reg)
+    return new Promise(function(resolve,reject){
+        if(!images||images.length==0){
+            resolve({'uuids':[],'body':str})
+        }else{
+            images.forEach(image => {
+                var url=image.replace(reg,'$1')
+                // if(!/^http:\/\//.test(url)){
+                //     url='http://'+url
+                // }
+                var id=uuid.v4()
+                picCrawler(url).then(function(resp){
+                    if(resp.success){
+                        var data={
+                            'uuid':id,
+                            'base64image':resp.data
+                        }
+                        return postImage(data)
+                    }
+                }).then(function(resp){
+                    if(resp.success){
+                        resps.push(resp.data.uuid)
+                        if(name=='csdn'){
+                            str=str.replace(url,config.basehost+'/api/IMAGES/'+resp.data.uuid)
+                        }
+                        if(name=='jianshu'){
+                            str=str.replace(reg,'<div><img src="'+config.basehost+'/api/IMAGES/'+resp.data.uuid+'"></div>')
+                        }
+                        if(resps.length==images.length){
+                            resolve({'uuids':resps,'body':str})
+                        }
+                    }
+                })
+            });
+        }
+    })
 }
 
 var c = new Crawler({
@@ -49,67 +115,112 @@ var c = new Crawler({
     // This will be called for each crawled page
 });
 
-
-
-function jianshuCrawler(url){
-    return new Promise(function(resolve,reject){
-        c.queue([{uri: url,jQuery: false,timeout:1000,retries:1,retryTimeout:1000,callback:function (error, res, done) {
-            if(error){
-                // console.log(error);
-                reject('failed')
-            }else{
-                let $ = cheerio.load(res.body);
-                let page=new String($('.show-content').html())
-                var pageMd=getPageHtml(page,true)
-                resolve(pageMd)
-            }
-            done();
-        }
-    }])
-})
-}
-
+//获取图片(http & https)
 function picCrawler(url){
     return new Promise(function(resolve,reject){
-        https.get(url,function(res){
-            var datas = [];
-            var size = 0;
-            res.on('data', function(data){
-                datas.push(data);
-                size += data.length;
+        if(/^https:\/\//.test(url)){
+            https.get(url,function(res){
+                var datas = [];
+                var size = 0;
+                res.on('data', function(data){
+                    datas.push(data);
+                    size += data.length;
+                })
+                res.on('end', function(data){
+                    var buff = Buffer.concat(datas, size);
+                    var pic = buff.toString('base64');
+                    resolve({success:true, data:pic});
+                })
+            }).on('error',function(err){
+                // console.log('获取验证码异常,异常原因'+err);
+                reject({success:false, msg:'获取图片失败'});
             })
-            res.on('end', function(data){
-                var buff = Buffer.concat(datas, size);
-                var pic = buff.toString('base64');
-                resolve({success:true, data:pic});
+        }else{
+            if(!/^http:\/\//.test(url)){
+                url='http://'+url
+            }
+            http.get(url,function(res){
+                var datas = [];
+                var size = 0;
+                res.on('data', function(data){
+                    datas.push(data);
+                    size += data.length;
+                })
+                res.on('end', function(data){
+                    var buff = Buffer.concat(datas, size);
+                    var pic = buff.toString('base64');
+                    resolve({success:true, data:pic});
+                })
+            }).on('error',function(err){
+                // console.log('获取验证码异常,异常原因'+err);
+                reject({success:false, msg:'获取图片失败'});
             })
-        }).on('error',function(err){
-            // console.log('获取验证码异常,异常原因'+err);
-            reject({success:false, msg:'获取图片失败'});
-        })
+        }
+
     })
 }
 
-var str='<figure class="image"><img alt="日期加减一天测试" height="128" src="https://img-blog.csdnimg.cn/20190213174238452.png" width="419"><figcaption></figcaption></figure><p>添加一天如下：</p><figure class="image"><img alt="日期加减一天测试" height="128" src="https://img-blog.csdnimg.cn/20190213174238452.png" width="419"><figcaption></figcaption></figure><p>添加一天如下：</p>'
-csdnImg(str)
-
-function csdnCrawler(url){
+function pageCrawler(url,name){
     return new Promise(function(resolve,reject){
         c.queue([{uri: url,jQuery: false,timeout:1000,retries:1,retryTimeout:1000,callback:function (error, res, done) {
             if(error){
                 // console.log(error);
                 reject('failed')
             }else{
-                let $ = cheerio.load(res.body);
-                let page=new String($('.htmledit_views').html())
-                var pageMd=getPageHtml(page,false)
-                resolve(pageMd)
+                var $ = cheerio.load(res.body);
+                if(name=='jianshu'){
+                    var page=new String($('.show-content').html())
+                }
+                if(name=='csdn'){
+                    var page=new String($('.htmledit_views').html()||$('.markdown_views').html())
+                }
+                getPageHtml(page,name).then(function(resp){
+                    resolve(resp)
+                })
             }
             done();
-        }
-    }])
-})
+            }
+        }])
+    })
 }
+
+// function jianshuCrawler(url){
+//     return new Promise(function(resolve,reject){
+//         c.queue([{uri: url,jQuery: false,timeout:1000,retries:1,retryTimeout:1000,callback:function (error, res, done) {
+//             if(error){
+//                 // console.log(error);
+//                 reject('failed')
+//             }else{
+//                 let $ = cheerio.load(res.body);
+//                 let page=new String($('.show-content').html())
+//                 getPageHtml(page,'jianshu').then(function(body){
+//                     resolve(body)
+//                 })
+//             }
+//             done();
+//             }
+//         }])
+//     })
+// }
+
+// function csdnCrawler(url){
+//     return new Promise(function(resolve,reject){
+//         c.queue([{uri: url,jQuery: false,timeout:1000,retries:1,retryTimeout:1000,callback:function (error, res, done) {
+//             if(error){
+//                 // console.log(error);
+//                 reject('failed')
+//             }else{
+//                 let $ = cheerio.load(res.body);
+//                 let page=new String($('.htmledit_views').html())
+//                 getPageHtml(page,'csdn').then(function(body){
+//                     resolve(body)
+//                 })
+//             }
+//             done();
+//         }
+//     }])
+// })
+// }
 
 
 /**
@@ -124,12 +235,11 @@ module.exports = exports = express.Router();
 // CRAWLER management 
 exports.route('/').get(function(req, res) {
     var url = req.query.url;
-    if(!url){
-        res.send({
-            'error':'url is required'
-        })
+    var name =req.query.name
+    if(!url || !name){
+        res.send({'error':'url & name is required'})
     }else{
-        jianshuCrawler(url).then(function(resp){
+        pageCrawler(url,name).then(function(resp){
             res.send({'status':true,'resp':resp})
         }).catch(function(resp){
             res.send({'status':false,'resp':resp})
@@ -137,17 +247,17 @@ exports.route('/').get(function(req, res) {
     }
 })
 
-exports.route('/csdn').get(function(req, res) {
-    var url = req.query.url;
-    if(!url){
-        res.send({
-            'error':'url is required'
-        })
-    }else{
-        csdnCrawler(url).then(function(resp){
-            res.send({'status':true,'resp':resp})
-        }).catch(function(resp){
-            res.send({'status':false,'resp':resp})
-        })
-    }
-})
+// exports.route('/csdn').get(function(req, res) {
+//     var url = req.query.url;
+//     if(!url){
+//         res.send({
+//             'error':'url is required'
+//         })
+//     }else{
+//         csdnCrawler(url).then(function(resp){
+//             res.send({'status':true,'resp':resp})
+//         }).catch(function(resp){
+//             res.send({'status':false,'resp':resp})
+//         })
+//     }
+// })

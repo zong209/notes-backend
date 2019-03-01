@@ -6,5 +6,6 @@ module.exports = {
     page:{
         limit:5,
         skip:1
-    }
+    },
+    basehost:'http://127.0.0.1:9090'
 };

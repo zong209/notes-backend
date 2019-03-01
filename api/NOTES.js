@@ -10,6 +10,7 @@ var db = require('../db/index');
  * NOTES
  */
 var NOTES = db.NOTES;
+var IMAGES = db.IMAGES;
 
 /**
  * Exports
@@ -56,7 +57,8 @@ exports.route('/').get(function(req, res) {
         var data = {
             ID: ID,
             title: req.body.title,
-            body:req.body.body
+            body:req.body.body,
+            uuids:req.body.uuids
         };
 
         (new NOTES(data)).save(function(err, data) {
@@ -130,14 +132,24 @@ exports.route('/delete/:id').get(function(req, res) {
             });
             return;
         }
-        data.remove(function (err, data) {
-            if (err) {
-              res.send({
-                error: 'Delete data failed!'
-              });
+        IMAGES.remove({'uuid':{$in:data.uuids}},function(err0,data0){
+            if(err0){
+                res.send({
+                    error: 'Delete images failed!'
+                });
+            }else{
+                console.log('删除图片成功！')
+                data.remove(function (err, data) {
+                    if (err) {
+                      res.send({
+                        error: 'Delete data failed!'
+                      });
+                    }
+                    console.log('删除笔记成功')
+                    res.send(data);
+                });
             }
-            res.send(data);
-        });
+        })
     })
 })
 

@@ -17,7 +17,8 @@ var schema = new Schema({
     ID: { type: Number, require: true },
     title: { type: String, require: true },
     body:{type:String},
-    submittime:{type:Date,required:true,default:new Date()}
+    submittime:{type:Date,required:true,default:new Date()},
+    uuids:{type:Array,default:new Array([]),required:true}
 }, { collection: "NOTES" });
 
 schema.static('getNextID', function (callback) {
