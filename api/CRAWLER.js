@@ -8,9 +8,12 @@ var https=require('https')
 var http=require('http')
 var Crawler = require("crawler");
 var cheerio = require('cheerio')
+
 // const fs = require('fs');
 var Entities = require('html-entities').XmlEntities;
+var upndown = require('upndown');
 
+var und = new upndown();
 // 图片接口
 var uuid = require('uuid')
 var db = require('../db/index');
@@ -32,7 +35,19 @@ function getPageHtml(str,name){
         if(name){
             csdnImg(body,name).then(function(resp){
                 body=entities.decode(resp.body)
-                resolve({'uuids':resp.uuids,'body':body})
+                if(name=='jianshu'){
+                    //html to markdown
+                    und.convert(body,function(err,markdown){
+                        if(err){
+                            resolve({'uuids':[],'body':'trans markdown error'})
+                        }else{
+                            resolve({'uuids':resp.uuids,'body':markdown})
+                        }
+                    })
+                }else{
+                    resolve({'uuids':resp.uuids,'body':body})
+                }
+
             })
         }
         else{

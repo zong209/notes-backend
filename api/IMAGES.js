@@ -4,9 +4,10 @@
 var express = require('express');
 var uuid = require('uuid')
 var db = require('../db/index');
+var mixin = require('utils-merge');
 
 var IMAGES = db.IMAGES;
-
+var NOTES = db.NOTES;
 /**
  * Exports
  */
@@ -18,26 +19,51 @@ module.exports = exports = express.Router();
 
 // NOTES management 
 exports.route('/').post(function(req, res) {
-    if (!req.body.image) {
+    if (!req.body.image || !req.body.blogId) {
         res.send({
             error: 'image string must be specified!'
         });
         return;
     }
-    var id=uuid.v4()
-    var data={
-        'uuid':id,
-        'base64image':req.body.image
-    }
-    (new IMAGES(data)).save(function(err,data){
+    (new IMAGES({"uuid":uuid.v4(),"base64image":new String(req.body.image).replace(/^data[\s\S]*?\,/,'')})).save(function(err,imgData){
         if (err) {
-            res.send({
-                error: 'Create NOTES failed!'
-            });
-            return;
+            res.send({'success':false,'msg':"save image failed"})
         }
-        res.send(data.uuid);
+        else{
+            //id存入NOTES
+            NOTES.findOne({ 'ID': req.body.blogId }).exec(function(err, data) {
+                if (err || ! data) {
+                    res.send({
+                      error: 'Data does not exist!'
+                    });
+                    return;
+                }
+                var newData=[imgData.uuid]
+                data.uuids.forEach(uuid => {
+                    newData.push(uuid)
+                });
+                mixin(data,{'uuids':newData})
+                data.save(function (err, data) {
+                    if (err) {
+                        res.send({
+                        error: 'Save data failed!'
+                        });
+                        return;
+                    }
+                    res.send({'success':true,'data':imgData.uuid})
+                });
+            })
+        }
     })
+    // (new IMAGES({'uuid':id,'image':image})).save(function(err,data){
+    //     if (err) {
+    //         res.send({
+    //             error: 'Create NOTES failed!'
+    //         });
+    //         return;
+    //     }
+    //     res.send(data.uuid);
+    // })
 });
 
 //查询
