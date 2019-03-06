@@ -15,6 +15,7 @@
     "http-errors": "~1.6.2",
     "mongoose": "^5.4.12",
     "morgan": "~1.9.0",
+    "upndown": "^2.1.0",
     "uuid": "^3.3.2"
   }
 }
