@@ -83,7 +83,7 @@ exports.route('/:id').get(function(req, res) {
             });
             return;
         }
-        res.setHeader('Content-Type','image/png')
+        res.setHeader('Content-Type','image/jpg')
         res.write(data.base64image,'base64')
         res.end()
     })

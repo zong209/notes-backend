@@ -105,16 +105,38 @@ exports.route('/modify/:id').get(function(req, res) {
             });
             return;
         }
-        mixin(data,req.body)
-        data.save(function (err, data) {
-            if (err) {
-                res.send({
-                error: 'Save data failed!'
+        // 置顶，修改ID
+        if(req.body.top){
+            NOTES.getNextID(function(err, ID) {
+                if (err) {
+                    res.send({
+                        error: err
+                    });
+                    return;
+                }
+                mixin(data,{'ID':ID})
+                data.save(function (err, data) {
+                    if (err) {
+                        res.send({
+                        error: 'Save data failed!'
+                        });
+                        return;
+                    }
+                    res.send(data);
                 });
-                return;
-            }
-            res.send(data);
-        });
+            })
+        }else{
+            mixin(data,req.body)
+            data.save(function (err, data) {
+                if (err) {
+                    res.send({
+                    error: 'Save data failed!'
+                    });
+                    return;
+                }
+                res.send(data);
+            });
+        }
     })
 })
 

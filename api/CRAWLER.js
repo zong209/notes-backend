@@ -81,7 +81,7 @@ function　postImage(data){
 //csdn图片处理
 function csdnImg(str,name){
     var resps=[]
-    if(name=='csdn'){
+    if(name=='csdn' || name=='cnblogs'){
         var reg=/\<img[\s\S]*?src=\"([\S]*?)\"[\s\S]*?>/g
     }
     if(name=='jianshu'){
@@ -94,6 +94,9 @@ function csdnImg(str,name){
         }else{
             images.forEach(image => {
                 var url=image.replace(reg,'$1')
+                if(name=='cnblogs'&&/^http:\/\//.test(url)){
+                    url=url.replace('http','https')
+                }
                 // if(!/^http:\/\//.test(url)){
                 //     url='http://'+url
                 // }
@@ -109,7 +112,7 @@ function csdnImg(str,name){
                 }).then(function(resp){
                     if(resp.success){
                         resps.push(resp.data.uuid)
-                        if(name=='csdn'){
+                        if(name=='csdn' || name=='cnblogs'){
                             str=str.replace(url,config.basehost+'/api/IMAGES/'+resp.data.uuid)
                         }
                         if(name=='jianshu'){
@@ -175,6 +178,7 @@ function picCrawler(url){
     })
 }
 
+
 function pageCrawler(url,name){
     return new Promise(function(resolve,reject){
         c.queue([{uri: url,jQuery: false,timeout:1000,retries:1,retryTimeout:1000,callback:function (error, res, done) {
@@ -188,6 +192,9 @@ function pageCrawler(url,name){
                 }
                 if(name=='csdn'){
                     var page=new String($('.htmledit_views').html()||$('.markdown_views').html())
+                }
+                if(name=='cnblogs'){
+                    var page=new String($('.blogpost-body').html())
                 }
                 getPageHtml(page,name).then(function(resp){
                     resolve(resp)
