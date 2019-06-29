@@ -73,7 +73,12 @@ exports.route('/').post(function(req, res) {
       }
     }
   }
-
+  if (query === '') {
+    var search = {
+      from: skip,
+      size: limit
+    }
+  }
   getES(search, function(data) {
     res.send({
       total: data.total,
