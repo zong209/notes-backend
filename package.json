@@ -6,6 +6,7 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "@elastic/elasticsearch": "^6.8.0",
     "cookie-parser": "~1.4.3",
     "crawler": "^1.2.0",
     "debug": "~2.6.9",

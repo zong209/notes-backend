@@ -116,7 +116,8 @@ function csdnImg(str,name){
                             str=str.replace(url,config.basehost+'/api/IMAGES/'+resp.data.uuid)
                         }
                         if(name=='jianshu'){
-                            str=str.replace(reg,'<div><img src="'+config.basehost+'/api/IMAGES/'+resp.data.uuid+'"></div>')
+                            var newReg=/\<div class=\"image-package\">[\s\S\n]*?<img data-original-src=\"\/\/([\S]*)\"[\s\S\n]*?data-original-filesize=\"[\s\S\n]*?<\/div>\n<\/div>/
+                            str=str.replace(newReg,'<div><img src="'+config.basehost+'/api/IMAGES/'+resp.data.uuid+'"></div>')
                         }
                         if(resps.length==images.length){
                             resolve({'uuids':resps,'body':str})
