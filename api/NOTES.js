@@ -37,7 +37,7 @@ function getES(searchInfo, callback) {
     if (!err && re.statusCode == 200) {
       var docs = []
       body.hits.hits.forEach(doc => {
-        docs.push(doc._source)
+        docs.push({ source: doc._source, highlight: doc.highlight })
       })
       callback({
         total: body.hits.total,
@@ -63,13 +63,33 @@ exports.route('/').post(function(req, res) {
     from: skip,
     size: limit,
     query: {
-      match: {
-        body: query
+      bool: {
+        must_not: [],
+        should: [
+          {
+            query_string: {
+              default_field: 'title',
+              query: query
+            }
+          },
+          {
+            query_string: {
+              default_field: 'body',
+              query: query
+            }
+          }
+        ]
       }
     },
     highlight: {
+      pre_tags: [''],
+      post_tags: [''],
       fields: {
-        body: {}
+        // body: {},
+        // content: { fragment_size: 300, number_of_fragments: 10 },
+        body: {},
+        title: {}
+        // _all: {}
       }
     }
   }
@@ -86,40 +106,6 @@ exports.route('/').post(function(req, res) {
     })
   })
 })
-// .post(function(req, res) {
-//   if (!req.body.title) {
-//     res.send({
-//       error: 'title must be specified!'
-//     })
-//     return
-//   }
-
-//   NOTES.getNextID(function(err, ID) {
-//     if (err) {
-//       res.send({
-//         error: err
-//       })
-//       return
-//     }
-
-//     var data = {
-//       ID: ID,
-//       title: req.body.title,
-//       body: req.body.body,
-//       uuids: req.body.uuids
-//     }
-
-//     new NOTES(data).save(function(err, data) {
-//       if (err) {
-//         res.send({
-//           error: 'Create NOTES failed!'
-//         })
-//         return
-//       }
-//       res.send(data)
-//     })
-//   })
-// })
 
 //查询＆修改
 exports
