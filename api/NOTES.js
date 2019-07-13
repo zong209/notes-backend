@@ -107,6 +107,45 @@ exports.route('/').post(function(req, res) {
   })
 })
 
+//新增笔记
+exports.route('/add').post(function(req, res) {
+  var title = req.body.title
+  var address = req.body.address
+  var keywords = req.body.keywords
+  var body = req.body.body
+  var uuids = req.body.uuids
+  if (!title || !address || !keywords || !body) {
+    res.send({
+      error: 'title address keywords body is required'
+    })
+  }
+  NOTES.getNextID(function(err, ID) {
+    if (err) {
+      res.send({
+        error: err
+      })
+      return
+    }
+    var data = new NOTES({
+      title: title,
+      address: address,
+      keywords: keywords,
+      body: body,
+      uuids: uuids,
+      ID: ID
+    })
+    data.save(function(err, data) {
+      if (err) {
+        res.send({
+          error: 'Save data failed!'
+        })
+        return
+      }
+      res.send(data)
+    })
+  })
+})
+
 //查询＆修改
 exports
   .route('/modify/:id')

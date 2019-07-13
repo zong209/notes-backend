@@ -8,5 +8,7 @@ module.exports = {
     skip: 0
   },
   basehost: 'http://127.0.0.1:9090',
-  elasticSearchUrl: 'http://127.0.0.1:9200/'
+  elasticSearchUrl: 'http://127.0.0.1:9200/',
+  imageServerApi: 'http://127.0.0.1:3000/api/images/add',
+  imageServe: '/api/images/look/'
 }
