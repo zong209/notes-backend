@@ -10,5 +10,6 @@ module.exports = {
   basehost: 'http://127.0.0.1:9090',
   elasticSearchUrl: 'http://127.0.0.1:9200/',
   imageServerApi: 'http://127.0.0.1:3000/api/images/add',
+  imageDeleteApi: 'http://127.0.0.1:3000/api/images/delete',
   imageServe: '/api/images/look/'
 }
