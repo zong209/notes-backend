@@ -193,7 +193,8 @@ exports.route('/add').post(function(req, res) {
         keywords: keywords,
         body: body,
         uuids: uuids,
-        ID: ID
+        ID: ID,
+        submittime: new Date()
       })
       data.save(function(err, data) {
         if (err) {

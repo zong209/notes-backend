@@ -26,12 +26,6 @@ var c = new Crawler({
 
 // 去空行处理图片
 function getPageHtml(str, name) {
-  // var REG_BODY = /<hr[^>]*>([\s\S]*)<\hr>/;
-  // var body = new String(REG_BODY.exec(str));
-  // var body = str.replace(/(^\s*)|(\s*$)/g, '')
-  // var reg = /(<code>[\s\S]+?)([\n]{2,})+([\s\S]+?<\/code>)/g
-  // // var reg=/(<code>[\s\S]+?)(\n)+(\#\#[\s\S]+?<\/code>)/g
-  // body = body.replace(reg, '$1\n' + '$3')
   return new Promise(function(resolve, reject) {
     if (name) {
       csdnImg(str, name).then(function(resp) {
@@ -163,6 +157,9 @@ function picCrawler(url, format) {
             res.on('end', function(data) {
               var buff = Buffer.concat(datas, size)
               var pic = buff.toString('base64')
+              if (format.length > 4) {
+                format = 'png'
+              }
               resolve({ success: true, data: pic, format: format })
             })
           }
