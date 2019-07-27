@@ -11,7 +11,6 @@ var db = require('../db/index')
  * NOTES
  */
 var NOTES = db.NOTES
-var IMAGES = db.IMAGES
 
 /**
  * Exports
@@ -116,15 +115,30 @@ exports.route('/').post(function(req, res) {
         must_not: [],
         should: [
           {
-            query_string: {
-              default_field: 'title',
-              query: query
+            match: {
+              title: {
+                query: query,
+                operator: 'and',
+                boost: 2
+              }
             }
           },
           {
-            query_string: {
-              default_field: 'body',
-              query: query
+            match: {
+              keywords: {
+                query: query,
+                operator: 'and',
+                boost: 3
+              }
+            }
+          },
+          {
+            match: {
+              body: {
+                query: query,
+                operator: 'and',
+                boost: 1
+              }
             }
           }
         ]
@@ -316,6 +330,8 @@ exports.route('/delete/:id').get(function(req, res) {
     }
   })
 })
+
+// 获取关键词信息
 
 // 批量ID查询
 exports.route('/batch').post(function(req, res) {
