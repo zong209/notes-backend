@@ -49,8 +49,8 @@ exports.route('/init').get(function(req, res) {
         })
         KEYS.deleteMany({}, () =>
           KEYS.insertMany(documents)
-            .then(() => {
-              res.send({ code: 200, success: true, msg: 'initial success' })
+            .then(data => {
+              res.send({ code: 200, success: true, keywordsList: data })
             })
             .catch(() => {
               res.send({ code: 501, success: false, msg: 'initial failed' })

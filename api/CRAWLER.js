@@ -13,16 +13,19 @@ var cheerio = require('cheerio')
 // const fs = require('fs');
 var Entities = require('html-entities').XmlEntities
 var breakdance = require('breakdance')
+var get_arg2 = require('../tools/csdn.js')
 
+// 全局变量，存储爬取网址
+var urlString = ''
 const entities = new Entities()
 
-var c = new Crawler({
+var options = {
   maxConnections: 10,
   forceUTF8: true,
   userAgent:
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Safari/537.36'
   // This will be called for each crawled page
-})
+}
 
 // 去空行处理图片
 function getPageHtml(str, name) {
@@ -30,7 +33,11 @@ function getPageHtml(str, name) {
     if (name) {
       csdnImg(str, name).then(function(resp) {
         body = entities.decode(resp.body)
-        var markdown = breakdance(body)
+        var markdown = unescape(
+          breakdance(body)
+            .replace(/&#x/g, '%u')
+            .replace(/;/g, '')
+        )
         resolve({ uuids: resp.uuids, body: markdown })
       })
     } else {
@@ -95,7 +102,8 @@ function csdnImg(str, name) {
           .then(function(resp) {
             if (resp.success) {
               var data = {
-                image: 'data:image/' + resp.format + ';base64,' + resp.data
+                image: 'data:image/' + resp.format + ';base64,' + resp.data,
+                articleId: urlString
               }
               return postImage(data)
             }
@@ -197,41 +205,54 @@ function picCrawler(url, format) {
 
 function pageCrawler(url, name) {
   return new Promise(function(resolve, reject) {
-    c.queue([
-      {
-        uri: url,
-        jQuery: false,
-        timeout: 1000,
-        retries: 1,
-        retryTimeout: 1000,
-        callback: function(error, res, done) {
-          if (error) {
-            // console.log(error);
-            reject('failed')
-          } else {
-            var $ = cheerio.load(res.body)
-            if (name == 'jianshu') {
-              var page = new String($('.show-content').html())
-            }
-            if (name == 'csdn') {
-              var page = new String(
-                $('.htmledit_views').html() || $('.markdown_views').html()
-              )
-            }
-            if (name == 'cnblogs') {
-              var page = new String($('.blogpost-body').html())
-            }
-            getPageHtml(page, name).then(function(resp) {
-              resolve(resp)
-            })
-          }
-          done()
+    if (name === 'csdn') {
+      get_arg2().then(arg2 => {
+        options['headers'] = {
+          Cookie: arg2
         }
-      }
-    ])
+        crawlerModule(url, name, options, resolve, reject)
+      })
+    } else {
+      crawlerModule(url, name, options, resolve, reject)
+    }
   })
 }
 
+function crawlerModule(url, name, opt, resolve, reject) {
+  var c = new Crawler(opt)
+  c.queue([
+    {
+      uri: url,
+      jQuery: false,
+      timeout: 1000,
+      retries: 2,
+      retryTimeout: 1000,
+      callback: function(error, res, done) {
+        if (error) {
+          // console.log(error);
+          reject('failed')
+        } else {
+          var $ = cheerio.load(res.body)
+          if (name == 'jianshu') {
+            var page = new String($('.show-content').html())
+          }
+          if (name == 'csdn') {
+            var page = new String(
+              $('.htmledit_views').html() || $('.markdown_views').html()
+            )
+          }
+          if (name == 'cnblogs') {
+            var page = new String($('.blogpost-body').html())
+          }
+          getPageHtml(page, name).then(function(resp) {
+            resolve(resp)
+          })
+        }
+        done()
+      }
+    }
+  ])
+}
 /**
  * Exports
  */
@@ -245,6 +266,7 @@ module.exports = exports = express.Router()
 exports.route('/').get(function(req, res) {
   var url = req.query.url
   var name = req.query.name
+  urlString = url
   if (!url || !name) {
     res.send({ error: 'url & name is required' })
   } else {

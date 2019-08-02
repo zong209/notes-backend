@@ -1,6 +1,4 @@
-var request = require('request')
 var Crawler = require('crawler')
-var cheerio = require('cheerio') //引入模块
 var config = require('../config')
 
 // var options = {
@@ -132,9 +130,13 @@ function get_arg2() {
   return new Promise((resolve, reject) => {
     get_script_data()
       .then(res => {
-        var _0x23a392 = unsbox(res)
-        var arg2 = 'acw_sc__v2=' + hexXor(key, _0x23a392)
-        resolve(arg2)
+        if (res) {
+          var _0x23a392 = unsbox(res)
+          var arg2 = 'acw_sc__v2=' + hexXor(key, _0x23a392)
+          resolve(arg2)
+        } else {
+          resolve('')
+        }
       })
       .catch(err => {
         reject(err)
