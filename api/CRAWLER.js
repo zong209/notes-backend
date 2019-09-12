@@ -72,10 +72,10 @@ function postImage(data) {
 function csdnImg(str, name) {
   var resps = []
   if (name == 'cnblogs') {
-    var reg = /<p>[\s\S\n]*?<img[\s\S]*?src=\"([\S]*?)\"[\s\S]*?>[\s\S\n]*?<\/p>/g
+    var reg = /(<[^\/]*?>)*<img[\s\S]*?src=\"([\S]*?)\"[^>]*?>([^\/]*?<[^>]*?>)*?/g
   }
   if (name == 'csdn') {
-    var reg = /<img[\s\S]*?src=\"([\S]*?)\"[\s\S]*?>/g
+    var reg = /(<[^\/]*?>)*<img[\s\S]*?src=\"([\S]*?)\"[^>]*?>([^\/]*?<[^>]*?>)*?/g
   }
   if (name == 'jianshu') {
     var reg = /\<div class=\"image-package\">[\s\S\n]*?<img data-original-src=\"\/\/([\S]*)\"[\s\S\n]*?data-original-format=\"image\/([\S]*)\"[\s\S]*?-caption\"><\/div>\n<\/div>/g
@@ -86,13 +86,17 @@ function csdnImg(str, name) {
       resolve({ uuids: [], body: str })
     } else {
       images.forEach((image, index) => {
-        var url = image.replace(reg, '$1')
         if (name == 'csdn' || name == 'cnblogs') {
+          var url = image.replace(reg, '$2')
           // var reg = /\<img[\s\S]*?src=\"([\S]*?)\"[\s\S]*?>/g
           var formatArray = url.split('.')
           var format = formatArray[formatArray.length - 1]
+          if (format.length > 4) {
+            format = 'png'
+          }
         }
         if (name == 'jianshu') {
+          var url = image.replace(reg, '$1')
           var format = image.replace(reg, '$2')
         }
         if (name == 'cnblogs' && /^http:\/\//.test(url)) {
@@ -206,12 +210,16 @@ function picCrawler(url, format) {
 function pageCrawler(url, name) {
   return new Promise(function(resolve, reject) {
     if (name === 'csdn') {
-      get_arg2().then(arg2 => {
-        options['headers'] = {
-          Cookie: arg2
-        }
-        crawlerModule(url, name, options, resolve, reject)
-      })
+      get_arg2()
+        .then(arg2 => {
+          options['headers'] = {
+            Cookie: arg2
+          }
+          crawlerModule(url, name, options, resolve, reject)
+        })
+        .catch(() => {
+          crawlerModule(url, name, options, resolve, reject)
+        })
     } else {
       crawlerModule(url, name, options, resolve, reject)
     }

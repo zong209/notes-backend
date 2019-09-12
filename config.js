@@ -1,7 +1,7 @@
 module.exports = {
   // host: 'htdq.ansi.space', // Hostname of IoTgo platform
   db: {
-    uri: 'mongodb://127.0.0.1:32002/NOTES' // MongoDB database address
+    uri: 'mongodb://127.0.0.1:32001/NOTES' // MongoDB database address
   },
   page: {
     limit: 5,

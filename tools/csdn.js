@@ -25,9 +25,9 @@ function get_script_data() {
       {
         uri: config.csdnHome,
         jQuery: false,
-        timeout: 1000,
+        timeout: 800,
         retries: 1,
-        retryTimeout: 1000,
+        retryTimeout: 800,
         callback: function(error, res, done) {
           if (error) {
             // console.log(error);
